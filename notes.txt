@@ -1,0 +1,218 @@
+Valeur par défaut:
+  Accuracy: 0.7587
+
+Valeur après fichier négociations:
+  ne fonctionne pas pour le moment
+
+
+
+"""
+
+define a function that takes a text and 
+
+remove from stopwords negociations (not no etc)
+
+used tester file to validate the work (it's not need to be changed)
+
+FILES TO CHANGE:
+  classifier.py
+    create model methode
+  
+  inputrep.py
+    not change: fit and get methodes
+    to change: init and mytokenize
+
+  Improve representation
+  Look at xor example
+  Look at exter
+  Try datadownloader
+
+"""
+Pour améliorer le score:
+  l’architecutre de classifier se joue aussi
+  nombre de couches
+
+on ne doit pas justifier le choix !!!
+
+====
+
+4000 valuers pour chouche + biais
+1000 pour le première couche 
+Epochs (nombre d’itérations) == 5
+  Des valeurs ne sont par lineares 
+Essaye “word vectors” !!!
+  also compute the average similarity between the words in the text and the words “good” - and it will be new feature
+  gensim for vectors
+ 
+
+Finalement on peut utiliser parser (biblioteque de python) 
+
+
+actuellement on utilise (1,1)
+  Essaye avec bigrammes  
+pour sortie on a 3 classes (3 inputs - neg, pos, neu)
+
+gensim
+
+Avant d’expérimenter avec values c’est mieux a commencer par des ?
+
+
+Results:
+Accuracy: 0.7587 - изначальный вариант
+Accuracy: 0.7377 - убрали пару слов из stopwords и вернулись (?) к изначальному inputrep
+Accuracy: 0.7440 - добавили новый слой в classifier и поставили layer1 activation='softplus вернули stopwords
+
+ERROR:   loss = categorical_crossentropy не меняем
+Accuracy: 0.7430 - добавили новый слой layer3 Dense(100, activation='relu')(layer2)
+Accuracy: 0.7620 - layer1: softplus; layer2: relu; layer3: softmax
+    поменяли на софтмакс layer3 = Dense(100, activation='softmax')(layer2)
+         если менять местами relu и softmax результат хуже
+Accuracy: 0.7567 - layer1: softplus; layer2: softmax; layer3: softmax
+    поменяли layer2 на софтмакс layer2 = Dense(100, activation='softmax')(layer1)
+
+Accuracy: 0.7647 - новый слой softsign
+        layer1 = Dense(100, activation='softplus')(input)
+        layer2 = Dense(100, activation='relu')(layer1)
+        layer3 = Dense(100, activation='softsign')(layer2)
+        layer4 = Dense(100, activation='softmax')(layer3)
+
+Accuracy: 0.7670 - self.epochs = 7
+
+Accuracy: 0.7700 - ngram_range= (1, 2),
+
+Accuracy: 0.7653 -
+        ngram_range= (1, 2)
+        self.epochs = 7
+        layer1 = Dense(100, activation='softplus')(input)
+        layer2 = Dense(100, activation='relu')(layer1)
+        layer3 = Dense(100, activation='softmax')(layer2)
+        output = Dense(len(self.labelset), activation='softmax')(layer3)
+
+Accuracy: 0.7667 - ngram_range= (1, 3)
+
+Accuracy: 0.7630 - поменяли optimizer, вернули (1, 2)
+  optimizer=optimizers.Nadam()
+  ngram_range= (1, 2)
+
+Accuracy: 0.6397 - меняем optimizer с Adam на Adadelta
+  optimizer=optimizers.Adadelta()
+
+Accuracy: 0.7570 - меняем optimizer на Adamax
+  optimizer=optimizers.Adamax
+
+
+Accuracy: 0.7650 - меняем optimizer на Adagrad
+  optimizer=optimizers.Adagrad
+
+Accuracy: 0.6397 - меняем optimizer на SGD
+  optimizer=optimizers.SGD
+
+Accuracy 0.7770 - оставляем только артикли
+Accuracy: 0.7447 - первоначальный файл en_gneg_words
+
+Accuracy 0.7770 - вернули только артикли
+
+Accuracy: 0.7837 - поменяли с (1, 2) на  ngram_range= (1, 3),
+
+Accuracy: 0.7773 - меняли с relu на Dense(100, activation='tanh')(layer1)
+
+Accuracy: 0.7770  - меняли с relu на Dense(100, activation='sigmoid')(layer1)
+
+- Увеличили кол-во нейронов в слое1 layer1 = Dense(100, activation='softplus')(input)
+
+
+-
+    layer1 = Dense(200, activation='softplus')(input)
+    layer2 = Dense(100, activation='relu')(layer1)
+    layer3 = Dense(100, activation='softsign')(layer2)
+    layer4 = Dense(100, activation='softmax')(layer3)
+
+
+
+========
+
+"""
+inputrep
+
+    def __init__(self):
+        self.stopset = sorted(set(stopwords.words('english')))
+        self.lemmatizer = WordNetLemmatizer()
+        self.max_features = 4000
+        #lines = open("./resources/en_negation_words.txt").readline()
+        with open("./resources/en_negation_words.txt") as f:
+            lines = f.readlines()
+        lines = [line.rstrip() for line in lines]
+        self.negations = sorted(set(lines))
+        self.vectorizer = CountVectorizer(
+            max_features= self.max_features,
+            strip_accents=None,
+            analyzer="word",
+            tokenizer=self.mytokenize,
+            stop_words=None,
+            ngram_range= (1, 1),
+            binary=False,
+            preprocessor=None
+        )
+        #print(self.negations)
+    def mytokenize(self, text):
+        map = {
+            'JJ': 'a',
+            'JJR': 'a',
+            'JJS': 's',
+            'NN': 'n',
+            'NNS': 'n',
+            'NNP': 'n',
+            'NNPS': 'n',
+            'VB': 'v',
+            'VBD': 'v',
+            'VBG': 'v',
+            'VBN': 'v',
+            'VBP': 'v',
+            'VBZ': 'v',
+            'RB': 'r',
+            'RBR': 'r',
+            'RBS': 'r',
+            'WRB': 'r',
+        }
+
+        """Customized tokenizer.
+        Here you can add other linguistic processing and generate more normalized features
+        """
+        lemmatiser = WordNetLemmatizer()
+
+        tokens = word_tokenize(text)
+        tokens = [t.lower() for t in tokens]
+        tokens = [t for t in tokens if t not in self.stopset]
+
+        tokens_pos = pos_tag(tokens)
+        #print(tokens)
+
+        #tokens = tokens_pos(tokens)
+
+        return tokens
+
+
+        result = []
+
+        for t in tokens_pos:
+            if t[0] not in self.stopset:
+                if (t[1] in map):
+                    result.append(lemmatiser.lemmatize(t[0], pos=map[t[1]]))
+                else:
+                    result.append(t[0])
+
+        tokens = [t for t in tokens if (t not in self.stopset or t in self.negations)]
+
+        return result
+"""
+
+0.7837
+self.epochs = 7 # try 15
+self.batchsize = 32
+ input = Input((self.inputrep.max_features,))
+        # Define output: its size is the number of distinct (class) labels (class probabilities from the softmax)
+        layer1 = Dense(100, activation='softplus')(input) #softplus -> softsign
+        layer2 = Dense(100, activation='relu')(layer1)
+        layer3 = Dense(100, activation='softsign')(layer2)
+        layer4 = Dense(100, activation='softmax')(layer3)
+        output = Dense(len(self.labelset), activation='softmax')(layer4)

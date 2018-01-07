@@ -31,7 +31,7 @@ class Classifier:
         # Define input vector, its size = number of features of the input representation
         input = Input((self.inputrep.max_features,))
         # Define output: its size is the number of distinct (class) labels (class probabilities from the softmax)
-        layer1 = Dense(200, activation='softplus')(input)
+        layer1 = Dense(100, activation='softplus')(input) # 200 - 7810
         layer2 = Dense(100, activation='relu')(layer1)
         layer3 = Dense(100, activation='softsign')(layer2)
         layer4 = Dense(100, activation='softmax')(layer3)
